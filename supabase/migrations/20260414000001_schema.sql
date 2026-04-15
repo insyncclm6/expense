@@ -106,11 +106,11 @@ begin
 end;
 $$;
 
-create trigger claims_updated_at
+create or replace trigger claims_updated_at
   before update on public.travel_expense_claims
   for each row execute function public.set_updated_at();
 
-create trigger profiles_updated_at
+create or replace trigger profiles_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();
 
@@ -134,7 +134,7 @@ begin
 end;
 $$;
 
-create trigger items_recalc_total
+create or replace trigger items_recalc_total
   after insert or update of amount or delete on public.travel_expense_items
   for each row execute function public.recalc_claim_total();
 
@@ -153,7 +153,7 @@ begin
 end;
 $$;
 
-create trigger on_auth_user_created
+create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
@@ -171,6 +171,7 @@ alter table public.travel_expense_claims enable row level security;
 alter table public.travel_expense_items  enable row level security;
 
 -- profiles: own row + admin sees all + managers see direct reports
+drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles for select using (
   auth.uid() = id
   or exists (
@@ -182,9 +183,11 @@ create policy "profiles_select" on public.profiles for select using (
     where sub.id = public.profiles.id and sub.reports_to = auth.uid()
   )
 );
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id);
 
 -- user_roles: own rows + admin sees all
+drop policy if exists "user_roles_select" on public.user_roles;
 create policy "user_roles_select" on public.user_roles for select using (
   user_id = auth.uid()
   or exists (
@@ -194,9 +197,11 @@ create policy "user_roles_select" on public.user_roles for select using (
 );
 
 -- teams: all authenticated users can read
+drop policy if exists "teams_select" on public.teams;
 create policy "teams_select" on public.teams for select using (auth.role() = 'authenticated');
 
 -- team_members: own + admin
+drop policy if exists "team_members_select" on public.team_members;
 create policy "team_members_select" on public.team_members for select using (
   user_id = auth.uid()
   or exists (
@@ -206,6 +211,7 @@ create policy "team_members_select" on public.team_members for select using (
 );
 
 -- expense claims: own + admin sees all + manager sees subordinates
+drop policy if exists "claims_select" on public.travel_expense_claims;
 create policy "claims_select" on public.travel_expense_claims for select using (
   user_id = auth.uid()
   or exists (
@@ -218,8 +224,10 @@ create policy "claims_select" on public.travel_expense_claims for select using (
       and p.reports_to = auth.uid()
   )
 );
+drop policy if exists "claims_insert" on public.travel_expense_claims;
 create policy "claims_insert" on public.travel_expense_claims for insert
   with check (user_id = auth.uid());
+drop policy if exists "claims_update" on public.travel_expense_claims;
 create policy "claims_update" on public.travel_expense_claims for update using (
   user_id = auth.uid()
   or exists (
@@ -232,23 +240,27 @@ create policy "claims_update" on public.travel_expense_claims for update using (
       and p.reports_to = auth.uid()
   )
 );
+drop policy if exists "claims_delete_draft" on public.travel_expense_claims;
 create policy "claims_delete_draft" on public.travel_expense_claims for delete using (
   user_id = auth.uid() and status = 'draft'
 );
 
 -- expense items: accessible if parent claim is accessible
+drop policy if exists "items_select" on public.travel_expense_items;
 create policy "items_select" on public.travel_expense_items for select using (
   exists (
     select 1 from public.travel_expense_claims c
     where c.id = travel_expense_items.claim_id
   )
 );
+drop policy if exists "items_insert" on public.travel_expense_items;
 create policy "items_insert" on public.travel_expense_items for insert with check (
   exists (
     select 1 from public.travel_expense_claims c
     where c.id = claim_id and c.user_id = auth.uid()
   )
 );
+drop policy if exists "items_update" on public.travel_expense_items;
 create policy "items_update" on public.travel_expense_items for update using (
   exists (
     select 1 from public.travel_expense_claims c
@@ -257,10 +269,12 @@ create policy "items_update" on public.travel_expense_items for update using (
 );
 
 -- storage: users upload to their own folder; managers/admins can read
+drop policy if exists "receipts_upload" on storage.objects;
 create policy "receipts_upload" on storage.objects for insert with check (
   bucket_id = 'expense-receipts'
   and auth.uid()::text = (storage.foldername(name))[1]
 );
+drop policy if exists "receipts_read" on storage.objects;
 create policy "receipts_read" on storage.objects for select using (
   bucket_id = 'expense-receipts'
   and (
@@ -271,6 +285,7 @@ create policy "receipts_read" on storage.objects for select using (
     )
   )
 );
+drop policy if exists "receipts_delete" on storage.objects;
 create policy "receipts_delete" on storage.objects for delete using (
   bucket_id = 'expense-receipts'
   and auth.uid()::text = (storage.foldername(name))[1]

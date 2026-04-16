@@ -28,6 +28,7 @@ export function getRoleDisplayName(role: string): string {
     admin: "Admin",
     manager: "Manager",
     employee: "Employee",
+    platform_admin: "Platform Admin",
   };
   return map[role] || role;
 }
@@ -35,6 +36,7 @@ export function getRoleDisplayName(role: string): string {
 export function getRoleVariant(
   role: string
 ): "default" | "secondary" | "outline" | "destructive" {
+  if (role === "platform_admin") return "destructive";
   if (role === "admin") return "destructive";
   if (role === "manager") return "secondary";
   return "outline";

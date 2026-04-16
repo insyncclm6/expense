@@ -366,6 +366,7 @@ export function useOrgExpenseSummary() {
 
 interface CreateClaimInput {
   user_id: string;
+  org_id?: string;
   trip_title: string;
   trip_start_date: string;
   trip_end_date: string;

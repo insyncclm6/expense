@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { getRolePermissions, type Permissions } from "@/lib/rolePermissions";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useOrg } from "@/contexts/OrgContext";
 
 export function useUserPermissions(): {
   permissions: Permissions;
@@ -8,40 +10,26 @@ export function useUserPermissions(): {
   userId: string | undefined;
   isLoading: boolean;
 } {
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [userId, setUserId] = useState<string | undefined>();
+  const { user, loading: authLoading } = useAuth();
+  const { orgRole, loading: orgLoading } = useOrg();
   const [hasSubordinates, setHasSubordinates] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [subLoading, setSubLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    if (!user?.id) { setSubLoading(false); return; }
+    supabase
+      .from("profiles" as never)
+      .select("id", { count: "exact", head: true })
+      .eq("reports_to", user.id)
+      .then(({ count }) => {
+        setHasSubordinates((count ?? 0) > 0);
+        setSubLoading(false);
+      });
+  }, [user?.id]);
 
-      if (session?.user?.id) {
-        setUserId(session.user.id);
+  const roles = orgRole ? [orgRole] : [];
+  const permissions = getRolePermissions(roles, hasSubordinates);
+  const isLoading = authLoading || orgLoading || subLoading;
 
-        const [rolesRes, subsRes] = await Promise.all([
-          supabase
-            .from("user_roles" as never)
-            .select("role")
-            .eq("user_id", session.user.id),
-          supabase
-            .from("profiles" as never)
-            .select("id", { count: "exact", head: true })
-            .eq("reports_to", session.user.id),
-        ]);
-
-        setUserRoles((rolesRes.data ?? []).map((r: { role: string }) => r.role));
-        setHasSubordinates((subsRes.count ?? 0) > 0);
-      }
-      setIsLoading(false);
-    };
-
-    load();
-  }, []);
-
-  const permissions = getRolePermissions(userRoles, hasSubordinates);
-  return { permissions, userRoles, userId, isLoading };
+  return { permissions, userRoles: roles, userId: user?.id, isLoading };
 }

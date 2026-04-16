@@ -29,36 +29,38 @@ serve(async (req) => {
     const { data: { user: caller }, error: authErr } = await supabaseClient.auth.getUser();
     if (authErr || !caller) throw new Error("Unauthorized");
 
-    // Caller must be admin
-    const { data: roles } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id);
-
-    const callerRoles = (roles ?? []).map((r: { role: string }) => r.role);
-    if (!callerRoles.includes("admin")) throw new Error("Insufficient permissions");
-
     const {
-      email,
-      password,
-      full_name,
-      phone,
-      role,
-      reports_to,
+      email, password, full_name, phone, role, reports_to, org_id,
     }: {
-      email: string;
-      password: string;
-      full_name: string;
-      phone?: string;
-      role: string;
-      reports_to?: string;
+      email: string; password: string; full_name: string;
+      phone?: string; role: string; reports_to?: string; org_id: string;
     } = await req.json();
 
-    if (!email || !password || !full_name || !role) {
-      throw new Error("email, password, full_name, and role are required");
+    if (!email || !password || !full_name || !role || !org_id) {
+      throw new Error("email, password, full_name, role, and org_id are required");
     }
     if (!ALLOWED_ROLES.includes(role)) {
       throw new Error(`role must be one of: ${ALLOWED_ROLES.join(", ")}`);
+    }
+
+    // Caller must be org admin OR platform admin
+    const isPlatformAdmin = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", caller.id)
+      .eq("role", "platform_admin")
+      .maybeSingle();
+
+    if (!isPlatformAdmin.data) {
+      const orgMembership = await supabaseAdmin
+        .from("org_memberships")
+        .select("role")
+        .eq("user_id", caller.id)
+        .eq("org_id", org_id)
+        .eq("role", "admin")
+        .eq("is_active", true)
+        .maybeSingle();
+      if (!orgMembership.data) throw new Error("Insufficient permissions");
     }
 
     // Create auth user
@@ -72,14 +74,11 @@ serve(async (req) => {
 
     const newUserId = userData.user.id;
 
-    // Remove any auto-assigned roles (trigger may assign a default)
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", newUserId);
-
-    // Assign the selected role
-    const { error: roleErr } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: newUserId, role });
-    if (roleErr) throw new Error("Failed to assign role: " + roleErr.message);
+    // Create org membership
+    const { error: memErr } = await supabaseAdmin
+      .from("org_memberships")
+      .insert({ org_id, user_id: newUserId, role });
+    if (memErr) throw new Error("Failed to create org membership: " + memErr.message);
 
     // Update profile with phone and reports_to
     const profileUpdate: Record<string, unknown> = {};
@@ -87,11 +86,7 @@ serve(async (req) => {
     if (reports_to) profileUpdate.reports_to = reports_to;
 
     if (Object.keys(profileUpdate).length > 0) {
-      const { error: profileErr } = await supabaseAdmin
-        .from("profiles")
-        .update(profileUpdate)
-        .eq("id", newUserId);
-      if (profileErr) console.error("Profile update error:", profileErr);
+      await supabaseAdmin.from("profiles").update(profileUpdate).eq("id", newUserId);
     }
 
     return new Response(

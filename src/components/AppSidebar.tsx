@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Plane, ShieldCheck, BarChart3, Users, UserCircle, LogOut, Receipt,
 } from "lucide-react";
 import { getRolePermissions } from "@/lib/rolePermissions";
+import type { Organization } from "@/contexts/OrgContext";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -14,9 +15,10 @@ interface Props {
   user: User | null;
   userRoles: string[];
   onLogout: () => void;
+  currentOrg: Organization | null;
 }
 
-export function AppSidebar({ user: _user, userRoles, onLogout }: Props) {
+export function AppSidebar({ user: _user, userRoles, onLogout, currentOrg }: Props) {
   const perms = getRolePermissions(userRoles);
 
   return (
@@ -27,9 +29,11 @@ export function AppSidebar({ user: _user, userRoles, onLogout }: Props) {
           <div className="p-1.5 bg-sidebar-primary rounded-lg">
             <Receipt className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-sidebar-foreground">Expense Claims</p>
-            <p className="text-xs text-sidebar-foreground/60">Management System</p>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-sidebar-foreground truncate">
+              {currentOrg?.name ?? "Expense Claims"}
+            </p>
+            <p className="text-xs text-sidebar-foreground/60">Expense Management</p>
           </div>
         </div>
       </SidebarHeader>
@@ -108,15 +112,7 @@ export function AppSidebar({ user: _user, userRoles, onLogout }: Props) {
   );
 }
 
-function NavItem({
-  to,
-  icon,
-  label,
-}: {
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-}) {
+function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>

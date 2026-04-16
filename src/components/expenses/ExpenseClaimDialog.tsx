@@ -15,6 +15,7 @@ interface ExpenseClaimDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string;
+  orgId?: string;
 }
 
 interface DraftItem {
@@ -34,7 +35,7 @@ const emptyItem: DraftItem = {
   expense_date: "",
 };
 
-export function ExpenseClaimDialog({ open, onOpenChange, userId }: ExpenseClaimDialogProps) {
+export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: ExpenseClaimDialogProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [submitting, setSubmitting] = useState(false);
   const [tripData, setTripData] = useState({
@@ -137,6 +138,7 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId }: ExpenseClaimD
 
       const claimId = await createClaim.mutateAsync({
         user_id: userId,
+        org_id: orgId,
         trip_title: tripData.trip_title,
         trip_start_date: tripData.trip_start_date,
         trip_end_date: tripData.trip_end_date,

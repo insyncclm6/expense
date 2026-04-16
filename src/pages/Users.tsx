@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus, Search, Users as UsersIcon, Edit, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
+import { useOrg } from "@/contexts/OrgContext";
 import { getRoleDisplayName, getRoleVariant } from "@/lib/rolePermissions";
 
 interface Profile {
@@ -26,41 +27,51 @@ interface Profile {
   manager_name?: string;
 }
 
-function useUsers() {
+function useUsers(orgId?: string) {
   return useQuery({
-    queryKey: ["users-list"],
+    queryKey: ["users-list", orgId],
     queryFn: async () => {
+      if (!orgId) return [];
+
       const { data: profiles, error } = await supabase
         .from("profiles" as never)
         .select("id, email, full_name, phone, reports_to, is_active")
         .order("full_name");
       if (error) throw error;
 
-      const { data: roles } = await supabase
-        .from("user_roles" as never)
-        .select("user_id, role");
+      // Get roles from org_memberships
+      const { data: memberships } = await supabase
+        .from("org_memberships" as never)
+        .select("user_id, role")
+        .eq("org_id", orgId)
+        .eq("is_active", true);
 
       const rolesMap = new Map<string, string[]>();
-      for (const r of (roles ?? []) as { user_id: string; role: string }[]) {
-        if (!rolesMap.has(r.user_id)) rolesMap.set(r.user_id, []);
-        rolesMap.get(r.user_id)!.push(r.role);
+      for (const m of (memberships ?? []) as { user_id: string; role: string }[]) {
+        rolesMap.set(m.user_id, [m.role]);
       }
 
       const profileList = (profiles ?? []) as Omit<Profile, "roles" | "manager_name">[];
       const profileMap = new Map(profileList.map((p) => [p.id, p]));
 
-      return profileList.map((p) => ({
-        ...p,
-        roles: rolesMap.get(p.id) ?? [],
-        manager_name: p.reports_to ? profileMap.get(p.reports_to)?.full_name ?? null : null,
-      })) as Profile[];
+      // Only return users who are members of this org
+      const orgUserIds = new Set(rolesMap.keys());
+      return profileList
+        .filter((p) => orgUserIds.has(p.id))
+        .map((p) => ({
+          ...p,
+          roles: rolesMap.get(p.id) ?? [],
+          manager_name: p.reports_to ? (profileMap.get(p.reports_to)?.full_name ?? null) : null,
+        })) as Profile[];
     },
+    enabled: !!orgId,
   });
 }
 
 export default function Users() {
   const { permissions } = useUserPermissions();
-  const { data: users, isLoading } = useUsers();
+  const { currentOrg } = useOrg();
+  const { data: users, isLoading } = useUsers(currentOrg?.id);
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<Profile | null>(null);
@@ -90,7 +101,9 @@ export default function Users() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <UsersIcon className="h-7 w-7" /> Users
           </h1>
-          <p className="text-muted-foreground">Manage employees, roles, and reporting hierarchy</p>
+          <p className="text-muted-foreground">
+            Manage employees, roles, and reporting hierarchy for {currentOrg?.name}
+          </p>
         </div>
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Add User
@@ -174,6 +187,7 @@ export default function Users() {
         onOpenChange={setCreateOpen}
         allUsers={users ?? []}
         mode="create"
+        orgId={currentOrg?.id ?? ""}
       />
       {editUser && (
         <UserFormDialog
@@ -182,6 +196,7 @@ export default function Users() {
           allUsers={(users ?? []).filter((u) => u.id !== editUser.id)}
           mode="edit"
           user={editUser}
+          orgId={currentOrg?.id ?? ""}
         />
       )}
     </div>
@@ -196,9 +211,10 @@ interface UserFormDialogProps {
   allUsers: Profile[];
   mode: "create" | "edit";
   user?: Profile;
+  orgId: string;
 }
 
-function UserFormDialog({ open, onOpenChange, allUsers, mode, user }: UserFormDialogProps) {
+function UserFormDialog({ open, onOpenChange, allUsers, mode, user, orgId }: UserFormDialogProps) {
   const qc = useQueryClient();
   const [fullName, setFullName] = useState(user?.full_name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -219,6 +235,7 @@ function UserFormDialog({ open, onOpenChange, allUsers, mode, user }: UserFormDi
           body: {
             email, password, full_name: fullName, phone: phone || undefined,
             role, reports_to: reportsTo !== "none" ? reportsTo : undefined,
+            org_id: orgId,
           },
         });
         if (error) throw error;
@@ -230,9 +247,11 @@ function UserFormDialog({ open, onOpenChange, allUsers, mode, user }: UserFormDi
           reports_to: reportsTo !== "none" ? reportsTo : null,
           is_active: isActive,
         }).eq("id", user.id);
-        // Update role
-        await supabase.from("user_roles" as never).delete().eq("user_id", user.id);
-        await supabase.from("user_roles" as never).insert({ user_id: user.id, role });
+        // Update role in org_memberships
+        await supabase.from("org_memberships" as never)
+          .update({ role })
+          .eq("user_id", user.id)
+          .eq("org_id", orgId);
         toast.success("User updated!");
       }
       qc.invalidateQueries({ queryKey: ["users-list"] });

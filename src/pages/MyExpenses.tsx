@@ -12,11 +12,13 @@ import {
 import { ExpenseClaimDialog } from "@/components/expenses/ExpenseClaimDialog";
 import { ExpenseClaimDetail } from "@/components/expenses/ExpenseClaimDetail";
 import { exportClaimsToCSV } from "@/lib/expenseExport";
+import { useOrg } from "@/contexts/OrgContext";
 
 export default function MyExpenses() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
+  const { currentOrg } = useOrg();
 
   const { data: user } = useCurrentUser();
   const { data: claims, isLoading } = useExpenseClaims(user?.id);
@@ -106,7 +108,7 @@ export default function MyExpenses() {
       </Card>
 
       {user && (
-        <ExpenseClaimDialog open={createOpen} onOpenChange={setCreateOpen} userId={user.id} />
+        <ExpenseClaimDialog open={createOpen} onOpenChange={setCreateOpen} userId={user.id} orgId={currentOrg?.id} />
       )}
       <ExpenseClaimDetail
         claim={selectedClaim ?? null}

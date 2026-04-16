@@ -153,11 +153,6 @@ export default function Landing() {
                 Get Started Free <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
-            <Link to="/login">
-              <Button size="lg" variant="outline" className="px-8 py-6 text-base border-white/20 text-white hover:bg-white/10">
-                Sign In
-              </Button>
-            </Link>
           </div>
 
           {/* Trust row */}

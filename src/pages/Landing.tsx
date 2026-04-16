@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Receipt, BarChart3, Users, ShieldCheck, ArrowRight,
   TrendingUp, FileText, CheckCircle2, AlertCircle, Download,
-  Eye, Lock,
+  Eye, Lock, Smartphone,
 } from "lucide-react";
 
 const painPoints = [
@@ -67,23 +67,23 @@ const features = [
 const steps = [
   {
     number: "01",
-    title: "Set Up Your Organisation",
-    description: "Add employees, assign reporting managers, and define roles. Your approval chain is live in minutes.",
+    title: "Sign Up in Seconds",
+    description: "Register with your work email and mobile number. Your identity is verified instantly via OTP on both WhatsApp and email.",
   },
   {
     number: "02",
-    title: "Employees Submit Structured Claims",
-    description: "Claims come in with itemised expenses, categories, dates, and receipts — not a WhatsApp message.",
+    title: "Create Your Organisation",
+    description: "Name your organisation, add team members, and assign roles — employee, manager, or admin. Your approval chain is live immediately.",
   },
   {
     number: "03",
-    title: "Managers Approve with Accountability",
-    description: "Every approval or rejection is logged with the approver's name, amount, and timestamp.",
+    title: "Claims Flow Through Approvals",
+    description: "Employees submit itemised claims with receipts. Managers review, approve with an exact amount, and every action is timestamped.",
   },
   {
     number: "04",
     title: "Finance Closes the Loop",
-    description: "Approved claims queue up for reimbursement. Mark as paid, export the report, done.",
+    description: "Approved claims queue up for reimbursement. Mark as paid, export a finance-ready CSV report, and you're done.",
   },
 ];
 
@@ -107,11 +107,18 @@ export default function Landing() {
             </div>
             <span className="font-bold text-lg tracking-tight">Expense Claims</span>
           </div>
-          <Link to="/login">
-            <Button className="btn-accent gap-2">
-              Sign In <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/login">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Sign In
+              </Button>
+            </Link>
+            <Link to="/login?tab=signup">
+              <Button size="sm" className="btn-accent gap-1.5">
+                Get Started <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -126,7 +133,7 @@ export default function Landing() {
         <div className="relative mx-auto max-w-7xl px-6 py-24 md:py-36 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-sm text-white/70 mb-8">
             <span className="w-2 h-2 rounded-full bg-[hsl(142_76%_45%)] animate-pulse" />
-            Built for finance leaders, not just employees
+            Multi-tenant · OTP-verified sign-up · Free to start
           </div>
 
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6 tracking-tight">
@@ -151,6 +158,19 @@ export default function Landing() {
                 Sign In
               </Button>
             </Link>
+          </div>
+
+          {/* Trust row */}
+          <div className="flex flex-wrap justify-center gap-6 mt-8 text-sm text-white/45">
+            <span className="flex items-center gap-1.5">
+              <Smartphone className="h-4 w-4" /> WhatsApp OTP verification
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4" /> Role-based access control
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4" /> No credit card required
+            </span>
           </div>
         </div>
       </section>
@@ -250,6 +270,7 @@ export default function Landing() {
               Ready to bring order to your expense process?
             </h2>
             <p className="text-white/60 text-lg mb-8 max-w-lg mx-auto">
+              Sign up in seconds — verified via WhatsApp and email OTP.
               Your finance team will thank you. Your auditors will too.
             </p>
             <Link to="/login?tab=signup">

@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
+        setLoading(true); // hold gates open while we verify platform_admin role
         const version = ++checkRef.current;
         try {
           const { data } = await supabase.rpc("has_role" as never, {

@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Building2, Users, Receipt, IndianRupee, Clock, CheckCircle2,
-  TrendingUp, ShieldAlert, Plus, MoreHorizontal, Activity,
+  Building2, Users, IndianRupee, Clock,
+  ShieldAlert, Plus, MoreHorizontal, Activity,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -68,11 +68,6 @@ function usePlatformStats() {
         if (claim.status === "submitted") cur.pending++;
         cur.amount += Number(claim.total_amount);
         orgStats.set(oid, cur);
-      }
-
-      const membersByOrg = new Map<string, number>();
-      for (const m of members.filter((x) => x.is_active)) {
-        // We'll join this with orgs below
       }
 
       return {
@@ -209,27 +204,23 @@ export default function CommandCenter() {
           label="Organisations"
           value={statsLoading ? "—" : stats?.totalOrgs ?? 0}
           sub={statsLoading ? undefined : `${stats?.activeOrgs ?? 0} active`}
-          color="blue"
         />
         <StatCard
           icon={<Users className="h-5 w-5 text-indigo-500" />}
           label="Active Users"
           value={statsLoading ? "—" : stats?.totalUsers ?? 0}
-          color="indigo"
         />
         <StatCard
           icon={<Clock className="h-5 w-5 text-yellow-500" />}
           label="Pending Claims"
           value={statsLoading ? "—" : stats?.pendingClaims ?? 0}
           highlight={(stats?.pendingClaims ?? 0) > 0}
-          color="yellow"
         />
         <StatCard
           icon={<IndianRupee className="h-5 w-5 text-green-500" />}
           label="Total Approved"
           value={statsLoading ? "—" : fmt(stats?.totalApproved ?? 0)}
           sub={statsLoading ? undefined : `${stats?.totalClaims ?? 0} claims total`}
-          color="green"
         />
       </div>
 
@@ -369,14 +360,13 @@ export default function CommandCenter() {
 // ── StatCard ──────────────────────────────────────────────────────────────────
 
 function StatCard({
-  icon, label, value, sub, highlight, color,
+  icon, label, value, sub, highlight,
 }: {
   icon: React.ReactNode;
   label: string;
   value: React.ReactNode;
   sub?: string;
   highlight?: boolean;
-  color: string;
 }) {
   const borderColor = highlight ? "border-yellow-400" : "border-border";
   return (

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +15,6 @@ import { toast } from "sonner";
 // ── Sign In ───────────────────────────────────────────────────────────────────
 
 function SignIn() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +30,7 @@ function SignIn() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      navigate("/dashboard");
+      // Navigation handled by Login page's useEffect once auth state resolves
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -414,8 +414,17 @@ function SignUp() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { user, isPlatformAdmin, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
+
+  // Redirect once auth state is fully resolved
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (isPlatformAdmin) navigate("/platform", { replace: true });
+    else navigate("/dashboard", { replace: true });
+  }, [authLoading, user, isPlatformAdmin, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-background p-4">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,8 +56,14 @@ const slideVariants = {
 
 export default function CreateOrg() {
   const navigate   = useNavigate();
-  const { user }   = useAuth();
+  const { user, isPlatformAdmin, loading: authLoading } = useAuth();
   const { refreshOrgs } = useOrg();
+
+  // Platform admins never need to create an org
+  useEffect(() => {
+    if (!authLoading && isPlatformAdmin) navigate("/platform", { replace: true });
+    if (!authLoading && !user) navigate("/login", { replace: true });
+  }, [authLoading, isPlatformAdmin, user, navigate]);
 
   const [step, setStep]   = useState(0);
   const [dir, setDir]     = useState(1);

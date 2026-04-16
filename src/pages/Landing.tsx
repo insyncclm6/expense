@@ -141,9 +141,14 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/login">
+            <Link to="/login?tab=signup">
               <Button size="lg" className="btn-accent gap-2 px-8 py-6 text-base shadow-glow">
-                Get Started <ArrowRight className="h-5 w-5" />
+                Get Started Free <ArrowRight className="h-5 w-5" />
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button size="lg" variant="outline" className="px-8 py-6 text-base border-white/20 text-white hover:bg-white/10">
+                Sign In
               </Button>
             </Link>
           </div>
@@ -247,9 +252,9 @@ export default function Landing() {
             <p className="text-white/60 text-lg mb-8 max-w-lg mx-auto">
               Your finance team will thank you. Your auditors will too.
             </p>
-            <Link to="/login">
+            <Link to="/login?tab=signup">
               <Button size="lg" className="btn-accent gap-2 px-8 shadow-glow">
-                Get Started <ArrowRight className="h-5 w-5" />
+                Get Started Free <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
           </div>

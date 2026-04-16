@@ -46,13 +46,20 @@ alter table public.team_members
   add column if not exists org_id uuid references public.organizations(id) on delete cascade;
 
 -- 4. ── Expand user_roles to allow platform_admin ─────────────
-alter table public.user_roles
-  drop constraint if exists user_roles_role_check;
-alter table public.user_roles
-  add constraint user_roles_role_check
-  check (role in ('admin', 'manager', 'employee', 'platform_admin'));
+-- Column may be an enum (app_role) or text+check depending on environment.
+-- Add to enum if it exists; otherwise recreate the check constraint.
+do $$ begin
+  if exists (select 1 from pg_type where typname = 'app_role') then
+    alter type app_role add value if not exists 'platform_admin';
+  else
+    alter table public.user_roles drop constraint if exists user_roles_role_check;
+    alter table public.user_roles add constraint user_roles_role_check
+      check (role in ('admin', 'manager', 'employee', 'platform_admin'));
+  end if;
+end $$;
 
 -- 5. ── Helper: is_platform_admin (security definer = bypasses RLS) ──
+-- Cast role::text to avoid "unsafe use of new enum value in same transaction"
 create or replace function public.is_platform_admin(_user_id uuid)
 returns boolean
 language sql security definer stable
@@ -60,7 +67,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.user_roles
-    where user_id = _user_id and role = 'platform_admin'
+    where user_id = _user_id and role::text = 'platform_admin'
   );
 $$;
 
@@ -72,7 +79,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.user_roles
-    where user_id = _user_id and role = _role
+    where user_id = _user_id and role::text = _role
   );
 $$;
 
@@ -175,6 +182,7 @@ create policy "profiles_select" on public.profiles for select using (
 );
 
 -- 11. ── user_roles RLS (only platform_admin matters now) ─────
+-- is_platform_admin() uses ::text cast internally so this is safe
 drop policy if exists "user_roles_select" on public.user_roles;
 create policy "user_roles_select" on public.user_roles for select using (
   user_id = auth.uid()

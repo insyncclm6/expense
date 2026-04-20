@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Receipt, Loader2, Eye, EyeOff, CheckCircle2, MessageSquare, Mail } from "lucide-react";
+import { Receipt, Loader2, Eye, EyeOff, MessageSquare, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 // ── Sign In ───────────────────────────────────────────────────────────────────
@@ -139,11 +139,9 @@ function SignIn() {
 
 // ── Sign Up ───────────────────────────────────────────────────────────────────
 
-type SignUpStep = "details" | "otp" | "done";
+type SignUpStep = "details" | "otp";
 
 function SignUp() {
-  const navigate = useNavigate();
-
   // Form fields
   const [fullName, setFullName] = useState("");
   const [email, setEmail]       = useState("");
@@ -200,34 +198,23 @@ function SignUp() {
     }
   };
 
-  // Step 2 — verify OTP then create account
+  // Step 2 — verify OTP, create account with email already confirmed, auto sign-in
   const handleVerifyAndCreate = async () => {
     if (otp.length !== 6) { toast.error("Enter the 6-digit OTP"); return; }
     setLoading(true);
     try {
-      // Verify OTP
-      const verifyRes = await supabase.functions.invoke("verify-otp", {
-        body: { sessionId, otp },
+      const cleanPhone = phone.replace(/\D/g, "");
+      const res = await supabase.functions.invoke("complete-signup", {
+        body: { sessionId, otp, email, password, fullName, phone: cleanPhone },
       });
-      if (verifyRes.error) throw new Error(verifyRes.error.message);
-      const verifyData = verifyRes.data as { verified?: boolean; error?: string };
-      if (!verifyData.verified) throw new Error(verifyData.error || "OTP verification failed");
+      if (res.error) throw new Error(res.error.message);
+      const data = res.data as { success?: boolean; error?: string };
+      if (!data.success) throw new Error(data.error || "Signup failed");
 
-      // Create account
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone,
-          },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-      if (signUpError) throw signUpError;
-
-      setStep("done");
+      // Account created with email confirmed — sign in immediately
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
+      // Auth redirect in Login page's useEffect takes over from here
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Verification failed");
     } finally {
@@ -255,24 +242,6 @@ function SignUp() {
       setLoading(false);
     }
   };
-
-  // ── Done state ──────────────────────────────────────────────────────────────
-  if (step === "done") {
-    return (
-      <div className="text-center space-y-4 py-4">
-        <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
-        <div>
-          <p className="font-semibold text-lg">Account created!</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Please check your email to confirm your address, then sign in.
-          </p>
-        </div>
-        <Button className="w-full" onClick={() => navigate("/login")}>
-          Go to Sign In
-        </Button>
-      </div>
-    );
-  }
 
   // ── OTP step ────────────────────────────────────────────────────────────────
   if (step === "otp") {

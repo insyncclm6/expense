@@ -11,6 +11,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Receipt, Loader2, Eye, EyeOff, CheckCircle2, MessageSquare, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { FunctionsHttpError } from "@supabase/supabase-js";
+
+// Edge Functions return a JSON `{ error: "..." }` body on non-2xx, but the
+// supabase-js client surfaces only the generic "Edge Function returned a
+// non-2xx status code" message. Unwrap the response body so the user sees
+// the real reason (expired OTP, incorrect OTP, etc.).
+async function extractFnError(err: unknown, fallback: string): Promise<string> {
+  if (err instanceof FunctionsHttpError) {
+    try {
+      const body = await err.context.json();
+      if (body?.error) return String(body.error);
+    } catch { /* fall through */ }
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
 
 // ── Sign In ───────────────────────────────────────────────────────────────────
 
@@ -181,7 +197,7 @@ function SignUp() {
       const res = await supabase.functions.invoke("send-otp", {
         body: { phone: cleanPhone, email, name: fullName },
       });
-      if (res.error) throw new Error(res.error.message);
+      if (res.error) throw res.error;
       const data = res.data as { success: boolean; sessionId: string; channels: { whatsapp: boolean; email: boolean } };
       if (!data.success) throw new Error("Failed to send OTP");
 
@@ -194,7 +210,7 @@ function SignUp() {
       if (data.channels.email) sent.push("email");
       toast.success(`OTP sent via ${sent.join(" & ")}`);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to send OTP");
+      toast.error(await extractFnError(err, "Failed to send OTP"));
     } finally {
       setLoading(false);
     }
@@ -209,7 +225,7 @@ function SignUp() {
       const verifyRes = await supabase.functions.invoke("verify-otp", {
         body: { sessionId, otp },
       });
-      if (verifyRes.error) throw new Error(verifyRes.error.message);
+      if (verifyRes.error) throw verifyRes.error;
       const verifyData = verifyRes.data as { verified?: boolean; error?: string };
       if (!verifyData.verified) throw new Error(verifyData.error || "OTP verification failed");
 
@@ -229,7 +245,7 @@ function SignUp() {
 
       setStep("done");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Verification failed");
+      toast.error(await extractFnError(err, "Verification failed"));
     } finally {
       setLoading(false);
     }
@@ -244,13 +260,13 @@ function SignUp() {
       const res = await supabase.functions.invoke("send-otp", {
         body: { phone: cleanPhone, email, name: fullName },
       });
-      if (res.error) throw new Error(res.error.message);
+      if (res.error) throw res.error;
       const data = res.data as { success: boolean; sessionId: string; channels: { whatsapp: boolean; email: boolean } };
       setSessionId(data.sessionId);
       setChannels(data.channels);
       toast.success("New OTP sent");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to resend");
+      toast.error(await extractFnError(err, "Failed to resend"));
     } finally {
       setLoading(false);
     }

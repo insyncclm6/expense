@@ -388,12 +388,13 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
 
-  // Redirect once auth state is fully resolved
+  // Redirect once auth state is fully resolved — but not when user explicitly
+  // navigated to the signup tab (they may want to register a different account)
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading || !user || defaultTab === "signup") return;
     if (isPlatformAdmin) navigate("/platform", { replace: true });
     else navigate("/dashboard", { replace: true });
-  }, [authLoading, user, isPlatformAdmin, navigate]);
+  }, [authLoading, user, isPlatformAdmin, navigate, defaultTab]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-background p-4">

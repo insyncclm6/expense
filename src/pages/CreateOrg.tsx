@@ -59,6 +59,11 @@ export default function CreateOrg() {
   const { user, isPlatformAdmin, loading: authLoading } = useAuth();
   const { refreshOrgs, currentOrg } = useOrg();
 
+  const [step, setStep]           = useState(0);
+  const [waitingForOrg, setWaitingForOrg] = useState(false);
+  const [dir, setDir]             = useState(1);
+  const [loading, setLoading]     = useState(false);
+
   // Platform admins never need to create an org
   useEffect(() => {
     if (!authLoading && isPlatformAdmin) navigate("/platform", { replace: true });
@@ -71,11 +76,6 @@ export default function CreateOrg() {
     const t = setTimeout(() => navigate("/dashboard", { replace: true }), 1200);
     return () => clearTimeout(t);
   }, [waitingForOrg, currentOrg, navigate]);
-
-  const [step, setStep]         = useState(0);
-  const [waitingForOrg, setWaitingForOrg] = useState(false);
-  const [dir, setDir]     = useState(1);
-  const [loading, setLoading] = useState(false);
 
   // Step 1
   const [orgName, setOrgName]     = useState("");

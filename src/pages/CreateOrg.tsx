@@ -57,7 +57,7 @@ const slideVariants = {
 export default function CreateOrg() {
   const navigate   = useNavigate();
   const { user, isPlatformAdmin, loading: authLoading } = useAuth();
-  const { refreshOrgs } = useOrg();
+  const { refreshOrgs, currentOrg } = useOrg();
 
   // Platform admins never need to create an org
   useEffect(() => {
@@ -65,7 +65,15 @@ export default function CreateOrg() {
     if (!authLoading && !user) navigate("/login", { replace: true });
   }, [authLoading, isPlatformAdmin, user, navigate]);
 
-  const [step, setStep]   = useState(0);
+  // Navigate to dashboard once OrgContext confirms the new org is loaded
+  useEffect(() => {
+    if (!waitingForOrg || !currentOrg) return;
+    const t = setTimeout(() => navigate("/dashboard", { replace: true }), 1200);
+    return () => clearTimeout(t);
+  }, [waitingForOrg, currentOrg, navigate]);
+
+  const [step, setStep]         = useState(0);
+  const [waitingForOrg, setWaitingForOrg] = useState(false);
   const [dir, setDir]     = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -100,9 +108,10 @@ export default function CreateOrg() {
       const id = (org as { id: string }).id;
       setOrgId(id);
 
-      await supabase
+      const { error: memberErr } = await supabase
         .from("org_memberships" as never)
         .insert({ org_id: id, user_id: user.id, role: "admin" });
+      if (memberErr) throw memberErr;
 
       goNext();
     } catch (err: unknown) {
@@ -151,10 +160,12 @@ export default function CreateOrg() {
   // ── Step 3: complete ─────────────────────────────────────────────────────────
   const handleComplete = async () => {
     setLoading(true);
-    await refreshOrgs();
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     setTimeout(() => confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } }), 300);
-    setTimeout(() => navigate("/dashboard"), 1200);
+    await refreshOrgs();
+    setLoading(false);
+    setWaitingForOrg(true);
+    // navigation fires via useEffect once currentOrg is confirmed in OrgContext
   };
 
   // ── Invite row helpers ───────────────────────────────────────────────────────

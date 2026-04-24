@@ -92,30 +92,27 @@ export default function CreateOrg() {
   const goBack = () => { setDir(-1); setStep((s) => s - 1); };
 
   // ── Step 1: create org ───────────────────────────────────────────────────────
+  // Uses a SECURITY DEFINER RPC to insert org + admin membership atomically,
+  // bypassing the chicken-and-egg RLS on these two tables.
   const handleCreateOrg = async () => {
     if (!orgName.trim()) { toast.error("Organisation name is required"); return; }
     if (!user) return;
     setLoading(true);
     try {
       const slug = slugify(orgName) + "-" + Math.random().toString(36).slice(2, 6);
-      const { data: org, error: orgErr } = await supabase
-        .from("organizations" as never)
-        .insert({ name: orgName.trim(), slug, industry: industry || null, created_by: user.id })
-        .select("id")
-        .single();
-      if (orgErr) throw orgErr;
+      const { data, error } = await supabase.rpc("create_organization" as never, {
+        p_name: orgName.trim(),
+        p_slug: slug,
+        p_industry: industry || null,
+      });
+      if (error) throw error;
+      if (!data) throw new Error("No organisation id returned");
 
-      const id = (org as { id: string }).id;
-      setOrgId(id);
-
-      const { error: memberErr } = await supabase
-        .from("org_memberships" as never)
-        .insert({ org_id: id, user_id: user.id, role: "admin" });
-      if (memberErr) throw memberErr;
-
+      setOrgId(data as unknown as string);
       goNext();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to create organisation");
+      const msg = (err as { message?: string } | null)?.message;
+      toast.error(msg || "Failed to create organisation");
     } finally {
       setLoading(false);
     }

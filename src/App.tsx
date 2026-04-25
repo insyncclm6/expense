@@ -18,6 +18,7 @@ import Approvals from "./pages/Approvals";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import MyProfile from "./pages/MyProfile";
+import ApprovalResult from "./pages/ApprovalResult";
 import NotFound from "./pages/NotFound";
 
 // Platform admin
@@ -53,6 +54,7 @@ export default function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/approval-result" element={<ApprovalResult />} />
 
                   {/* Platform Admin — has its own layout + auth guard */}
                   <Route path="/platform" element={<PlatformLayout />}>

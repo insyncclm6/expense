@@ -42,7 +42,6 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
     trip_title: "",
     trip_start_date: "",
     trip_end_date: "",
-    destination: "",
     purpose: "",
   });
   const [items, setItems] = useState<DraftItem[]>([{ ...emptyItem }]);
@@ -52,7 +51,7 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
 
   const resetForm = () => {
     setStep(1);
-    setTripData({ trip_title: "", trip_start_date: "", trip_end_date: "", destination: "", purpose: "" });
+    setTripData({ trip_title: "", trip_start_date: "", trip_end_date: "", purpose: "" });
     setItems([{ ...emptyItem }]);
     setProofFiles([]);
   };
@@ -142,7 +141,6 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
         trip_title: tripData.trip_title,
         trip_start_date: tripData.trip_start_date,
         trip_end_date: tripData.trip_end_date,
-        destination: tripData.destination || undefined,
         purpose: tripData.purpose || undefined,
         items: claimItems,
       });
@@ -207,14 +205,14 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
-            {step === 1 ? "New Expense Claim — Trip Details" : "Add Expenses"}
+            {step === 1 ? "New Expense Claim" : "Add Expenses"}
           </DialogTitle>
         </DialogHeader>
 
         {step === 1 ? (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Trip Title *</Label>
+              <Label>Title *</Label>
               <Input
                 placeholder="e.g., Client meeting - Mumbai"
                 value={tripData.trip_title}
@@ -244,17 +242,9 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Destination</Label>
-              <Input
-                placeholder="e.g., Mumbai, Maharashtra"
-                value={tripData.destination}
-                onChange={(e) => setTripData({ ...tripData, destination: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Purpose</Label>
               <Textarea
-                placeholder="Brief purpose of the trip"
+                placeholder="Brief description"
                 value={tripData.purpose}
                 onChange={(e) => setTripData({ ...tripData, purpose: e.target.value })}
                 rows={2}
@@ -271,7 +261,6 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               <strong>{tripData.trip_title}</strong> · {tripData.trip_start_date} to {tripData.trip_end_date}
-              {tripData.destination && ` · ${tripData.destination}`}
             </p>
 
             <div className="space-y-3">

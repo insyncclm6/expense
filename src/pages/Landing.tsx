@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Receipt, BarChart3, Users, ShieldCheck, ArrowRight,
   TrendingUp, FileText, CheckCircle2, AlertCircle, Download,
-  Eye, Lock, Smartphone,
+  Eye, Lock,
 } from "lucide-react";
 
 const painPoints = [
@@ -67,8 +67,8 @@ const features = [
 const steps = [
   {
     number: "01",
-    title: "Sign Up in Seconds",
-    description: "Register with your work email and mobile number. Your identity is verified instantly via OTP on both WhatsApp and email.",
+    title: "Sign In & Create Your Org",
+    description: "Sign in with your credentials, create your organisation, and you're ready to go — no lengthy onboarding required.",
   },
   {
     number: "02",
@@ -138,7 +138,7 @@ export default function Landing() {
                 Sign In
               </Button>
             </Link>
-            <Link to="/login?tab=signup">
+            <Link to="/login">
               <Button size="sm" className="btn-accent gap-1.5">
                 Get Started <ArrowRight className="h-3.5 w-3.5" />
               </Button>
@@ -158,7 +158,7 @@ export default function Landing() {
         <div className="relative mx-auto max-w-7xl px-6 py-24 md:py-36 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 text-sm text-white/70 mb-8">
             <span className="w-2 h-2 rounded-full bg-[hsl(142_76%_45%)] animate-pulse" />
-            Multi-tenant · OTP-verified sign-up · Free to start
+            Multi-tenant · Role-based access · Free to start
           </div>
 
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6 tracking-tight">
@@ -173,7 +173,7 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/login?tab=signup">
+            <Link to="/login">
               <Button size="lg" className="btn-accent gap-2 px-8 py-6 text-base shadow-glow">
                 Get Started Free <ArrowRight className="h-5 w-5" />
               </Button>
@@ -183,13 +183,10 @@ export default function Landing() {
           {/* Trust row */}
           <div className="flex flex-wrap justify-center gap-6 mt-8 text-sm text-white/45">
             <span className="flex items-center gap-1.5">
-              <Smartphone className="h-4 w-4" /> WhatsApp OTP verification
-            </span>
-            <span className="flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4" /> Role-based access control
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4" /> No credit card required
+              <CheckCircle2 className="h-4 w-4" /> Full audit trail
             </span>
           </div>
         </div>
@@ -329,10 +326,10 @@ export default function Landing() {
               Ready to bring order to your expense process?
             </h2>
             <p className="text-white/60 text-lg mb-8 max-w-lg mx-auto">
-              Sign up in seconds — verified via WhatsApp and email OTP.
+              Sign in and bring complete visibility to your expense process.
               Your finance team will thank you. Your auditors will too.
             </p>
-            <Link to="/login?tab=signup">
+            <Link to="/login">
               <Button size="lg" className="btn-accent gap-2 px-8 shadow-glow">
                 Get Started Free <ArrowRight className="h-5 w-5" />
               </Button>

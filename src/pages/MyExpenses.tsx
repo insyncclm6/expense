@@ -146,8 +146,7 @@ function ClaimRow({ claim, onClick }: { claim: ExpenseClaim; onClick: () => void
           <Badge variant={getStatusColor(claim.status)}>{getStatusLabel(claim.status)}</Badge>
         </div>
         <div className="text-sm text-muted-foreground mt-1">
-          {format(new Date(claim.trip_start_date), "MMM d")} —{" "}
-          {format(new Date(claim.trip_end_date), "MMM d, yyyy")}
+          {format(new Date(claim.trip_start_date), "MMM d, yyyy")}
         </div>
       </div>
       <div className="text-right ml-4">

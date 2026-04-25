@@ -2,7 +2,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors-headers.ts";
 
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return (100000 + (buf[0] % 900000)).toString();
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function emailHtml(otp: string, name: string): string {
@@ -20,7 +26,7 @@ function emailHtml(otp: string, name: string): string {
         </tr>
         <tr>
           <td style="padding:36px;">
-            <p style="margin:0 0 8px;color:#374151;font-size:14px;">Hi ${name},</p>
+            <p style="margin:0 0 8px;color:#374151;font-size:14px;">Hi ${escapeHtml(name)},</p>
             <p style="margin:0 0 24px;color:#374151;font-size:14px;">
               Use this code to verify your email address and complete your organisation setup:
             </p>
@@ -58,6 +64,13 @@ Deno.serve(async (req) => {
     if (!email || !phone) {
       return new Response(
         JSON.stringify({ error: "Email and phone are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email address" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

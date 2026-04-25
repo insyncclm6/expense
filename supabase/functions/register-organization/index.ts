@@ -113,6 +113,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (verification.phone !== cleanPhone) {
+      return new Response(
+        JSON.stringify({ error: "Phone number does not match the one used for verification." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // OTPs verified — delete the record (one-time use)
     await supabase.from("otp_verifications").delete().eq("id", verification_id);
 
@@ -149,10 +156,15 @@ Deno.serve(async (req) => {
     const userId = authData.user.id;
 
     // Update profile — auto-created by handle_new_user trigger
-    await supabase
+    const { error: profileErr } = await supabase
       .from("profiles")
       .update({ phone: `+91${cleanPhone}` })
       .eq("id", userId);
+
+    if (profileErr) {
+      console.error("Profile phone update failed:", profileErr);
+      // Non-fatal: org creation proceeds, phone can be set later from profile page
+    }
 
     // ── Create organisation ──────────────────────────────────────────────────
     const { data: org, error: orgErr } = await supabase

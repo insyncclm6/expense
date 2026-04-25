@@ -93,6 +93,87 @@ async function parseWithHaiku(base64: string, mimeType: string): Promise<Record<
   }
 }
 
+const TAMPER_PROMPT = `You are a document integrity analyst. Examine this receipt image carefully for signs of digital tampering or manipulation.
+
+Look specifically for:
+- Numbers or text that appear in a different font, size, weight, or colour from surrounding text
+- Pixel halos, blurring, or sharp edges around amounts, dates, or vendor names
+- Patches of uniform colour or whitened areas where content may have been erased and retyped
+- Text that does not sit on the natural baseline or grid of the receipt
+- Lighting or shadow inconsistencies suggesting elements were pasted in
+- Any visual anomaly around the total amount, date, or invoice number
+
+Return ONLY valid JSON (no markdown):
+{
+  "tamperRisk": "none | suspected | likely",
+  "reason": "one sentence — what specifically looks suspicious, or 'No visual anomalies detected'"
+}`;
+
+async function detectTampering(base64: string, mimeType: string): Promise<{ tamperRisk: string; reason: string }> {
+  const fallback = { tamperRisk: "none", reason: "Tamper check could not be completed." };
+  // Only meaningful for images; PDFs are parsed as text so skip
+  if (mimeType === "application/pdf") return { tamperRisk: "none", reason: "Tamper check not applicable for PDFs." };
+
+  // Try Groq Vision first
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "llama-4-scout-17b-16e-instruct",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
+            { type: "text", text: TAMPER_PROMPT },
+          ],
+        }],
+        temperature: 0,
+        max_tokens: 200,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const parsed = extractJson(data.choices?.[0]?.message?.content ?? "");
+      if (parsed?.tamperRisk) return parsed as { tamperRisk: string; reason: string };
+    }
+  } catch (e) {
+    console.error("Groq tamper exception:", e);
+  }
+
+  // Fallback to Haiku
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 200,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: mimeType, data: base64 } },
+            { type: "text", text: TAMPER_PROMPT },
+          ],
+        }],
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const parsed = extractJson(data.content?.[0]?.text ?? "");
+      if (parsed?.tamperRisk) return parsed as { tamperRisk: string; reason: string };
+    }
+  } catch (e) {
+    console.error("Haiku tamper exception:", e);
+  }
+
+  return fallback;
+}
+
 async function detectFraud(
   items: Array<{ vendor: string | null; amount: number; date: string | null; expenseType: string; description: string }>,
   claimDate: string,
@@ -167,15 +248,20 @@ Deno.serve(async (req) => {
         parsed = await parseWithHaiku(base64, mimeType);
       }
 
+      // Run tamper detection in parallel with any remaining work (images only)
+      const tamper = await detectTampering(base64, mimeType);
+
       parsedItems.push({
-        fileIndex: i,
-        fileName: name,
-        vendor:      parsed?.vendor      ?? null,
-        amount:      typeof parsed?.amount === "number" ? parsed.amount : null,
-        date:        parsed?.date        ?? claimDate ?? null,
-        expenseType: parsed?.expenseType ?? "miscellaneous",
-        description: parsed?.description ?? name,
-        confidence:  parsed?.confidence  ?? "low",
+        fileIndex:    i,
+        fileName:     name,
+        vendor:       parsed?.vendor      ?? null,
+        amount:       typeof parsed?.amount === "number" ? parsed.amount : null,
+        date:         parsed?.date        ?? claimDate ?? null,
+        expenseType:  parsed?.expenseType ?? "miscellaneous",
+        description:  parsed?.description ?? name,
+        confidence:   parsed?.confidence  ?? "low",
+        tamperRisk:   tamper.tamperRisk,
+        tamperReason: tamper.reason,
       });
     }
 

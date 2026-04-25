@@ -27,12 +27,14 @@ interface ExpenseClaimDialogProps {
 }
 
 interface ParsedResult {
-  vendor:      string | null;
-  amount:      number | null;
-  date:        string | null;
-  expenseType: string;
-  description: string;
-  confidence:  "high" | "medium" | "low";
+  vendor:       string | null;
+  amount:       number | null;
+  date:         string | null;
+  expenseType:  string;
+  description:  string;
+  confidence:   "high" | "medium" | "low";
+  tamperRisk:   "none" | "suspected" | "likely";
+  tamperReason: string;
 }
 
 interface ParsedFile {
@@ -377,25 +379,38 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
 
                         {/* Parsed result preview */}
                         {pf.status === "done" && pf.result && (
-                          <div className="mt-1 flex flex-wrap gap-1.5">
-                            {pf.result.vendor && (
-                              <Badge variant="outline" className="text-xs">{pf.result.vendor}</Badge>
-                            )}
-                            {pf.result.amount != null && (
-                              <Badge variant="outline" className="text-xs font-semibold">
-                                ₹{pf.result.amount.toLocaleString("en-IN")}
+                          <div className="mt-1 space-y-1">
+                            <div className="flex flex-wrap gap-1.5">
+                              {pf.result.vendor && (
+                                <Badge variant="outline" className="text-xs">{pf.result.vendor}</Badge>
+                              )}
+                              {pf.result.amount != null && (
+                                <Badge variant="outline" className="text-xs font-semibold">
+                                  ₹{pf.result.amount.toLocaleString("en-IN")}
+                                </Badge>
+                              )}
+                              <Badge variant="secondary" className="text-xs capitalize">
+                                {EXPENSE_TYPES.find(t => t.value === pf.result!.expenseType)?.label ?? pf.result.expenseType}
                               </Badge>
+                              <span className={cn(
+                                "text-xs",
+                                pf.result.confidence === "high"   ? "text-green-600" :
+                                pf.result.confidence === "medium" ? "text-yellow-600" : "text-muted-foreground"
+                              )}>
+                                {pf.result.confidence} confidence
+                              </span>
+                            </div>
+                            {/* Tamper indicator — only shown for suspected/likely */}
+                            {pf.result.tamperRisk === "suspected" && (
+                              <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-1">
+                                ⚠ Tampering suspected — {pf.result.tamperReason}
+                              </p>
                             )}
-                            <Badge variant="secondary" className="text-xs capitalize">
-                              {EXPENSE_TYPES.find(t => t.value === pf.result!.expenseType)?.label ?? pf.result.expenseType}
-                            </Badge>
-                            <span className={cn(
-                              "text-xs",
-                              pf.result.confidence === "high"   ? "text-green-600" :
-                              pf.result.confidence === "medium" ? "text-yellow-600" : "text-muted-foreground"
-                            )}>
-                              {pf.result.confidence} confidence
-                            </span>
+                            {pf.result.tamperRisk === "likely" && (
+                              <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1">
+                                🚨 Tampering likely — {pf.result.tamperReason}
+                              </p>
+                            )}
                           </div>
                         )}
                         {pf.status === "failed" && (
@@ -418,6 +433,13 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
                 </div>
               )}
             </div>
+
+            {/* Tamper detection disclaimer — shown when any image file has been analysed */}
+            {parsedFiles.some(pf => pf.status === "done" && pf.file.type !== "application/pdf") && (
+              <p className="text-xs text-muted-foreground border rounded px-3 py-2 bg-muted/40">
+                ⓘ <strong>AI tamper detection disclaimer:</strong> The tamper analysis above is intended solely to aid human audit. It uses visual pattern recognition and <strong>may produce false positives or miss sophisticated edits</strong>. Results must not be used as sole evidence of document fraud.
+              </p>
+            )}
 
             {/* Fraud banner */}
             {fraudAnalysis && !isParsing && <FraudBanner />}

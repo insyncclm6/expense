@@ -511,25 +511,24 @@ export default function Landing() {
 
       {/* ── Pricing ────────────────────────────────────────────── */}
       <section id="pricing" className="mx-auto max-w-5xl px-6 py-24">
-        <AnimatedSection className="text-center mb-14">
-          <motion.div variants={fadeUp} className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+        <div className="text-center mb-14">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
             <Crown className="h-3.5 w-3.5" />
             Pricing
-          </motion.div>
-          <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-extrabold mb-4">
+          </div>
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
             Simple pricing.{" "}
             <span className="gradient-text-primary">Start free.</span>
-          </motion.h2>
-          <motion.p variants={fadeUp} className="text-muted-foreground text-lg max-w-xl mx-auto">
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
             Free for small teams. Upgrade when you need WhatsApp notifications, fraud analysis, and advanced reports.
-          </motion.p>
-        </AnimatedSection>
+          </p>
+        </div>
 
-        <AnimatedSection className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {plans.map((plan) => (
-            <motion.div
+            <div
               key={plan.name}
-              variants={fadeUp}
               className={`relative rounded-3xl p-8 ${
                 plan.highlighted
                   ? "border-2 border-primary/30 bg-card shadow-xl shadow-primary/5"
@@ -578,22 +577,20 @@ export default function Landing() {
                   </Button>
                 </Link>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </AnimatedSection>
+        </div>
       </section>
 
       {/* ── FAQ ────────────────────────────────────────────────── */}
       <section className="border-t border-border/50 bg-muted/30 py-24 px-6">
         <div className="mx-auto max-w-2xl">
-          <AnimatedSection className="text-center mb-12">
-            <motion.h2 variants={fadeUp} className="text-3xl font-extrabold mb-3">
-              Common questions
-            </motion.h2>
-            <motion.p variants={fadeUp} className="text-muted-foreground">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold mb-3">Common questions</h2>
+            <p className="text-muted-foreground">
               Everything your finance team wants to know before signing up.
-            </motion.p>
-          </AnimatedSection>
+            </p>
+          </div>
 
           <div className="space-y-3">
             {faqs.map((faq) => (

@@ -142,6 +142,8 @@ function SignIn() {
 type SignUpStep = "details" | "otp";
 
 function SignUp() {
+  const navigate = useNavigate();
+
   // Form fields
   const [fullName, setFullName] = useState("");
   const [email, setEmail]       = useState("");
@@ -211,10 +213,10 @@ function SignUp() {
       const data = res.data as { success?: boolean; error?: string };
       if (!data.success) throw new Error(data.error || "Signup failed");
 
-      // Account created with email confirmed — sign in immediately
+      // Account created with email confirmed — sign in and redirect
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
-      // Auth redirect in Login page's useEffect takes over from here
+      navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Verification failed");
     } finally {

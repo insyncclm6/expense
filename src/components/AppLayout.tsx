@@ -22,7 +22,7 @@ export function AppLayout() {
     if (authLoading) return;
     if (!user) { navigate("/login", { replace: true }); return; }
     if (isPlatformAdmin) { navigate("/platform", { replace: true }); return; }
-    if (!orgLoading && !currentOrg) { navigate("/create-org", { replace: true }); return; }
+    if (!orgLoading && !currentOrg) { navigate("/login", { replace: true }); return; }
   }, [authLoading, orgLoading, user, isPlatformAdmin, currentOrg, navigate]);
 
   if (authLoading || orgLoading) {

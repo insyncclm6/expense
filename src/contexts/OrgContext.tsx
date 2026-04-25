@@ -90,6 +90,32 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       organization: m.organizations,
     }));
 
+    // If no memberships found on first load, retry once after a short delay
+    // to handle the race condition where a service-role insert isn't immediately
+    // visible to the user's JWT query (e.g. right after registration).
+    if (mapped.length === 0) {
+      await new Promise((r) => setTimeout(r, 1200));
+      const { data: retryData } = await supabase
+        .from("org_memberships" as never)
+        .select("org_id, role, is_active, organizations(*)")
+        .eq("user_id", uid)
+        .eq("is_active", true);
+      const retried: OrgMembership[] = ((retryData ?? []) as Array<{
+        org_id: string;
+        role: "admin" | "manager" | "employee";
+        is_active: boolean;
+        organizations: Organization;
+      }>).map((m) => ({
+        org_id: m.org_id,
+        role: m.role,
+        is_active: m.is_active,
+        organization: m.organizations,
+      }));
+      if (retried.length > 0) {
+        mapped.push(...retried);
+      }
+    }
+
     setOrgs(mapped);
 
     const savedOrgId = localStorage.getItem(LS_KEY);

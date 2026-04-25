@@ -12,7 +12,6 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
-import CreateOrg from "./pages/CreateOrg";
 import Dashboard from "./pages/Dashboard";
 import MyExpenses from "./pages/MyExpenses";
 import Approvals from "./pages/Approvals";
@@ -54,7 +53,6 @@ export default function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/create-org" element={<CreateOrg />} />
 
                   {/* Platform Admin — has its own layout + auth guard */}
                   <Route path="/platform" element={<PlatformLayout />}>

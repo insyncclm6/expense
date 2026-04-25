@@ -25,6 +25,33 @@ function extractJson(text: string): Record<string, unknown> | null {
   }
 }
 
+/** Coerce AI-returned amount to a number, handling strings like "₹1,500" or "1500.00". */
+function coerceAmount(raw: unknown): number | null {
+  if (typeof raw === "number") return isNaN(raw) ? null : raw;
+  if (typeof raw === "string") {
+    const cleaned = raw.replace(/[₹$€£,\s]/g, "").trim();
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? null : n;
+  }
+  return null;
+}
+
+/** Normalize AI-returned date to YYYY-MM-DD, handling DD/MM/YYYY, DD-MM-YYYY, etc. */
+function coerceDate(raw: unknown): string | null {
+  if (!raw || raw === "null") return null;
+  const s = String(raw).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // DD/MM/YYYY or DD-MM-YYYY
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  // Try native Date parsing as last resort
+  try {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  } catch { /* ignore */ }
+  return null;
+}
+
 async function parseWithGroq(base64: string, mimeType: string): Promise<Record<string, unknown> | null> {
   try {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -255,8 +282,8 @@ Deno.serve(async (req) => {
         fileIndex:    i,
         fileName:     name,
         vendor:       parsed?.vendor      ?? null,
-        amount:       typeof parsed?.amount === "number" ? parsed.amount : null,
-        date:         parsed?.date        ?? claimDate ?? null,
+        amount:       coerceAmount(parsed?.amount),
+        date:         coerceDate(parsed?.date) ?? claimDate ?? null,
         expenseType:  parsed?.expenseType ?? "miscellaneous",
         description:  parsed?.description ?? name,
         confidence:   parsed?.confidence  ?? "low",

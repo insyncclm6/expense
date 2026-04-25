@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, MapPin, Calendar, User, Receipt, FileText, Image as ImageIcon, Upload, X, Loader2 } from "lucide-react";
+import { ExternalLink, MapPin, Calendar, User, Receipt, FileText, Image as ImageIcon, Upload, X, Loader2, ShieldCheck, Shield, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -281,6 +281,34 @@ export function ExpenseClaimDetail({ claim, open, onOpenChange, isOwner }: Expen
               )}
             </div>
           </>
+
+          {/* Fraud analysis — visible to approver/admin only */}
+          {!isOwner && claim.fraud_analysis && (() => {
+            const { riskLevel, flags, summary } = claim.fraud_analysis!;
+            const styles = {
+              low:    { wrap: "bg-green-50 border-green-200 text-green-800",   Icon: ShieldCheck, label: "Low Risk"    },
+              medium: { wrap: "bg-yellow-50 border-yellow-200 text-yellow-800", Icon: Shield,      label: "Medium Risk" },
+              high:   { wrap: "bg-red-50 border-red-200 text-red-800",          Icon: ShieldAlert, label: "High Risk"   },
+            }[riskLevel] ?? { wrap: "bg-muted border", Icon: Shield, label: riskLevel };
+            return (
+              <div className={`rounded-lg border p-3 space-y-1.5 ${styles.wrap}`}>
+                <div className="flex items-center gap-2 font-semibold text-sm">
+                  <styles.Icon className="h-4 w-4" />
+                  AI Fraud Analysis — {styles.label}
+                </div>
+                <p className="text-xs">{summary}</p>
+                {flags.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {flags.map((f, i) => (
+                      <li key={i} className="text-xs flex items-start gap-1.5">
+                        <span className="mt-0.5">•</span> {f.message}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Rejection reason */}
           {claim.rejection_reason && (

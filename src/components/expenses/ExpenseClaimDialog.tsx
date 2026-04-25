@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Trash2, Loader2, Upload, X,
-  ShieldCheck, ShieldAlert, Shield,
   CheckCircle2, AlertCircle, FileText, ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -210,7 +209,8 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
           receipt_url:   null,
           receipt_name:  null,
         })),
-        proofFiles: parsedFiles.map(pf => pf.file),
+        proofFiles:    parsedFiles.map(pf => pf.file),
+        fraudAnalysis: fraudAnalysis ?? null,
       });
 
       if (!asDraft) {
@@ -238,37 +238,6 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
     } finally {
       setSubmitting(false);
     }
-  };
-
-  // ── Fraud banner ───────────────────────────────────────────────────────────
-
-  const FraudBanner = () => {
-    if (!fraudAnalysis) return null;
-    const { riskLevel, flags, summary } = fraudAnalysis;
-    const styles = {
-      low:    { wrap: "bg-green-50  border-green-200  text-green-800",  Icon: ShieldCheck,  label: "Low Risk"    },
-      medium: { wrap: "bg-yellow-50 border-yellow-200 text-yellow-800", Icon: Shield,       label: "Medium Risk" },
-      high:   { wrap: "bg-red-50    border-red-200    text-red-800",    Icon: ShieldAlert,  label: "High Risk"   },
-    }[riskLevel] ?? { wrap: "bg-muted border", Icon: Shield, label: riskLevel };
-
-    return (
-      <div className={cn("rounded-lg border p-3 space-y-1.5", styles.wrap)}>
-        <div className="flex items-center gap-2 font-semibold text-sm">
-          <styles.Icon className="h-4 w-4" />
-          AI Fraud Analysis — {styles.label}
-        </div>
-        <p className="text-xs">{summary}</p>
-        {flags.length > 0 && (
-          <ul className="space-y-0.5">
-            {flags.map((f, i) => (
-              <li key={i} className="text-xs flex items-start gap-1.5">
-                <span className="mt-0.5">•</span> {f.message}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    );
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -389,6 +358,9 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
                                   ₹{pf.result.amount.toLocaleString("en-IN")}
                                 </Badge>
                               )}
+                              {pf.result.date && (
+                                <Badge variant="outline" className="text-xs">{pf.result.date}</Badge>
+                              )}
                               <Badge variant="secondary" className="text-xs capitalize">
                                 {EXPENSE_TYPES.find(t => t.value === pf.result!.expenseType)?.label ?? pf.result.expenseType}
                               </Badge>
@@ -441,9 +413,6 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
               </p>
             )}
 
-            {/* Fraud banner */}
-            {fraudAnalysis && !isParsing && <FraudBanner />}
-
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button onClick={handleNext} disabled={!canProceed}>
@@ -457,9 +426,6 @@ export function ExpenseClaimDialog({ open, onOpenChange, userId, orgId }: Expens
         {/* ══ Step 2 ══════════════════════════════════════════════════════════ */}
         {step === 2 && (
           <div className="space-y-4">
-
-            {/* Fraud reminder for medium/high */}
-            {fraudAnalysis && fraudAnalysis.riskLevel !== "low" && <FraudBanner />}
 
             {/* Claim summary */}
             <p className="text-sm text-muted-foreground">

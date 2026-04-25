@@ -43,6 +43,11 @@ export interface ExpenseClaim {
   rejection_reason: string | null;
   reimbursed_at: string | null;
   proof_urls: ProofFile[];
+  fraud_analysis?: {
+    riskLevel: "low" | "medium" | "high";
+    flags: { severity: string; message: string }[];
+    summary: string;
+  } | null;
   created_at: string;
   updated_at: string;
   profiles?: { full_name: string; email: string } | null;
@@ -375,6 +380,7 @@ interface CreateClaimInput {
   items: Omit<ExpenseItem, "id" | "claim_id" | "created_at">[];
   receiptFiles?: (File | undefined)[];  // parallel array to items
   proofFiles?: File[];
+  fraudAnalysis?: { riskLevel: string; flags: { severity: string; message: string }[]; summary: string } | null;
 }
 
 export function useCreateClaim() {
@@ -384,12 +390,13 @@ export function useCreateClaim() {
       items,
       receiptFiles,
       proofFiles,
+      fraudAnalysis,
       ...claimData
     }: CreateClaimInput) => {
       // 1. Insert claim row
       const { data: newClaim, error } = await supabase
         .from("travel_expense_claims" as never)
-        .insert(claimData)
+        .insert({ ...claimData, fraud_analysis: fraudAnalysis ?? null })
         .select("id")
         .single();
       if (error) throw error;

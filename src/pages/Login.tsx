@@ -118,6 +118,16 @@ export default function Login() {
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Sign In
             </Button>
+            <p className="text-center text-sm text-muted-foreground pt-2">
+              New organisation?{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/register")}
+                className="text-primary hover:underline font-medium"
+              >
+                Register here
+              </button>
+            </p>
           </form>
         </CardContent>
       </Card>

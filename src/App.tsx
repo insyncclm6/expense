@@ -10,6 +10,7 @@ import { AppLayout } from "@/components/AppLayout";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import CreateOrg from "./pages/CreateOrg";
 import Dashboard from "./pages/Dashboard";
@@ -51,6 +52,7 @@ export default function App() {
                   {/* Public */}
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/create-org" element={<CreateOrg />} />
 

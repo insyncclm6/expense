@@ -138,7 +138,7 @@ export default function Landing() {
                 Sign In
               </Button>
             </Link>
-            <Link to="/login">
+            <Link to="/register">
               <Button size="sm" className="btn-accent gap-1.5">
                 Get Started <ArrowRight className="h-3.5 w-3.5" />
               </Button>
@@ -173,7 +173,7 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/login">
+            <Link to="/register">
               <Button size="lg" className="btn-accent gap-2 px-8 py-6 text-base shadow-glow">
                 Get Started Free <ArrowRight className="h-5 w-5" />
               </Button>
@@ -329,7 +329,7 @@ export default function Landing() {
               Sign in and bring complete visibility to your expense process.
               Your finance team will thank you. Your auditors will too.
             </p>
-            <Link to="/login">
+            <Link to="/register">
               <Button size="lg" className="btn-accent gap-2 px-8 shadow-glow">
                 Get Started Free <ArrowRight className="h-5 w-5" />
               </Button>
